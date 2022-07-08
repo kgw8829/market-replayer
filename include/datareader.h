@@ -13,8 +13,8 @@ class DataReader {
 	message::Trade trade_;
 	std::ifstream b_in_;
 	std::ifstream t_in_;
-	std::function<void(message::Book&&)> book_callback_;
-	std::function<void(message::Trade&&)> trade_callback_;
+	std::function<void(message::Book&)> book_callback_;
+	std::function<void(message::Trade&)> trade_callback_;
 
 	bool ReadBook() {
 		if (b_in_.eof())
@@ -46,8 +46,8 @@ class DataReader {
 
 public:
 	DataReader(std::string name_b, std::string name_t,
-			std::function<void(message::Book&&)> b_cb,
-			std::function<void(message::Trade&&)> t_cb)
+			std::function<void(message::Book&)> b_cb,
+			std::function<void(message::Trade&)> t_cb)
 	:b_in_(name_b), t_in_(name_t), book_callback_(b_cb), trade_callback_(t_cb)
 	{
 		if (!b_in_.is_open())
@@ -65,7 +65,7 @@ public:
 
 				if (!ReadTrade())
 					break;
-			} else if (book_.time_ < trade_.time_ || book_.is_used_) {
+			} else if (book_.time_ < trade_.time_ && book_.is_used_) {
 				if (!ReadBook())
 					break;
 			} else {
@@ -73,10 +73,13 @@ public:
 					break;
 			}
 
-			if (book_.time_ < trade_.time_)
-				book_callback_(std::move(book_));
-			else
-				trade_callback_(std::move(trade_));
+			if (book_.time_ < trade_.time_) {
+				book_callback_(book_);
+				book_.Clear();
+			} else {
+				trade_callback_(trade_);
+				trade_.Clear();
+			}
 		}
 	}
 };

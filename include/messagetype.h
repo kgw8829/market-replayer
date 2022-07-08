@@ -42,6 +42,8 @@ namespace message {
 		Book(Book&& book)
 		: Base("book"), time_(book.time_), symbol_(book.symbol_), bids_(std::move(book.bids_)), asks_(std::move(book.asks_))
 		{
+			book.bids_.clear();
+			book.asks_.clear();
 			book.is_used_ = true;
 		}
 
@@ -75,6 +77,12 @@ namespace message {
 				bids_.push_back(std::make_pair(std::stod(tokens[2*i]), std::stod(tokens[2*i+1])));
 				asks_.push_back(std::make_pair(std::stod(tokens[2*i + 20]), std::stod(tokens[2*i + 21]))); 
 			}
+		}
+
+		void Clear() {
+			bids_.clear();
+			asks_.clear();
+			is_used_ = true;
 		}
 	};
 
@@ -114,6 +122,10 @@ namespace message {
 			price_ = std::stod(tokens[2]);
 			quantity_ = std::stod(tokens[3]);
 			is_sell_ = tokens[4] == "true";
+		}
+
+		void Clear() {
+			is_used_ = true;
 		}
 	};
 }
