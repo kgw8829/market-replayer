@@ -28,6 +28,9 @@ struct Crypto {
 			CheckRatio();
 		}
 	}
+	
+	void OnTrade(message::Trade &&trade) {
+	}
 
 	void CheckRatio() {
 		auto aave = cryptos["AAVEUSDT"];
@@ -43,14 +46,14 @@ struct Crypto {
 	}
 };
 
-void OnBook(message::Book& message) 
-{
+void OnBook(message::Book& message) {
 	auto crypto = cryptos[message.symbol_];
-	crypto -> OnBook(std::forward<message::Book>(message));
+	crypto -> OnBook(std::move(message));
 }
 
 void OnTrade(message::Trade& message) {
 	auto crypto = cryptos[message.symbol_];
+	crypto -> OnTrade(std::move(message));
 }
 
 int main() {
