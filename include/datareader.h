@@ -1,87 +1,74 @@
-#ifndef DATAREADER_H
-#define DATAREADER_H
+#pragma once
 
-#include <fstream>
-#include <iostream>
-#include <exception>
-#include <functional>
 #include "messagetype.h"
 
-class DataReader {
-	long last_timestamp_;
-	message::Book book_;
-	message::Trade trade_;
-	std::ifstream b_in_;
-	std::ifstream t_in_;
-	std::function<void(message::Book&)> book_callback_;
-	std::function<void(message::Trade&)> trade_callback_;
+#include <fstream>
+#include <memory>
+#include <queue>
+#include <vector>
 
-	bool ReadBook() {
-		if (b_in_.eof())
-			return false;
+namespace replayer {
 
-		std::string line;
-		std::getline(b_in_, line);
-		
-		if (line.empty())
-			return false;
-		
-		book_.Parse(line);
-		return true;
-	}
+const std::string CSV_PATH = "./csv/trade/";
 
-	bool ReadTrade() {
-		if (t_in_.eof())
-			return false;
+std::string GetCsvName(
+    const std::string& symbol,
+    const std::string& date)
+{
+    return CSV_PATH + symbol + "-" + date + ".csv";
+}
 
-		std::string line;
-		std::getline(t_in_, line);
-		
-		if (line.empty())
-			return false;
-		
-		trade_.Parse(line);
-		return true;
-	}
+template <typename TradeCBType>
+class DataReader
+{
+	std::priority_queue<TradeMessage, std::vector<TradeMessage>, CompareTrade> m_pq;
+    std::vector<std::string> m_symbols;
+    std::vector<std::unique_ptr<std::ifstream>> m_trade_streams;
+	TradeCBType m_trade_cb;
 
 public:
-	DataReader(std::string name_b, std::string name_t,
-			std::function<void(message::Book&)> b_cb,
-			std::function<void(message::Trade&)> t_cb)
-	:b_in_(name_b), t_in_(name_t), book_callback_(b_cb), trade_callback_(t_cb)
+    void Run()
+    {
+        do
+        {
+            for (int i = 0; i < m_symbols.size(); i++)
+            {
+                if (m_trade_streams[i]->eof())
+                    continue;
+                
+                std::string s;
+                std::getline(*m_trade_streams[i], s);
+                m_pq.emplace(m_symbols[i], s);
+            }
+
+            m_trade_cb(m_pq.top());
+            m_pq.pop();
+        }
+        while (!m_pq.empty());
+    }
+
+	DataReader(
+        const std::vector<std::string>& symbols,
+        const std::string& date,
+		TradeCBType&& on_trade)
+	:
+        m_symbols{ symbols },
+        m_trade_streams(symbols.size()),
+        m_trade_cb(std::move(on_trade))
 	{
-		if (!b_in_.is_open())
-			throw std::runtime_error(name_b + "is not valid file name");
-
-		if (!t_in_.is_open())
-			throw std::runtime_error(name_t + "is not valid file name");
+        for (int i = 0; i < symbols.size(); i++) {
+            std::string header;
+            
+            m_trade_streams[i] = std::make_unique<std::ifstream>(GetCsvName(symbols[i], date));
+            std::getline(*m_trade_streams[i], header);
+        }
 	}
 
-	void ReadData() {
-		while (true) {
-			if (book_.time_ == 0L) {
-				if(!ReadBook())
-					break;
-
-				if (!ReadTrade())
-					break;
-			} else if (book_.time_ < trade_.time_ && book_.is_used_) {
-				if (!ReadBook())
-					break;
-			} else {
-				if (!ReadTrade())
-					break;
-			}
-
-			if (book_.time_ < trade_.time_) {
-				book_callback_(book_);
-				book_.Clear();
-			} else {
-				trade_callback_(trade_);
-				trade_.Clear();
-			}
-		}
-	}
+    ~DataReader()
+    {
+        for (auto& trade_stream : m_trade_streams)
+            trade_stream->close();
+    }
 };
 
-#endif
+} // namespace replayer

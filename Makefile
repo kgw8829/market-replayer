@@ -3,12 +3,12 @@ SRC=./src
 INC=./include
 CFLAGS=-std=c++17 -I./include
 
-market-replayer: market-replayer.o
-	$(CC) -o market-replayer market-replayer.o $(CFLAGS)
+replayer: replayer.o
+	$(CC) -o replayer replayer.o $(CFLAGS)
 
-market-replayer.o: $(INC)/messagetype.h $(INC)/datareader.h $(SRC)/market_replayer.cc
-	$(CC) -c -o market-replayer.o $(SRC)/market_replayer.cc -I$(INC) $(CFLAGS)
+replayer.o: $(INC)/messagetype.h $(INC)/datareader.h $(SRC)/replayer.cc
+	$(CC) -c -o replayer.o $(SRC)/replayer.cc -I$(INC) $(CFLAGS)
 
 clean:
 	rm -f *.o
-	rm market-replayer
+	rm replayer

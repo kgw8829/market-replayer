@@ -1,133 +1,70 @@
-#ifndef MESSAGETYPE_H
-#define MESSAGETYPE_H
+#pragma once
 
+#include <cstdint>
 #include <string>
-#include <utility>
 #include <vector>
 #include <sstream>
 
-namespace message {
-	std::vector<std::string> split(std::string input, char delimiter) {
-		std::vector<std::string> tokens;
-		std::stringstream ss(input);
-		std::string temp;
+namespace replayer {
 
-		while (std::getline(ss, temp, delimiter))
-			tokens.push_back(temp);
+enum class BuySell {
+    BUY,
+    SELL
+};
 
-		return tokens;
-	}
+struct TradeMessage
+{
+    std::string m_symbol;
+    std::uint32_t m_agg_trade_id;
+    std::uint32_t m_first_trade_id;
+    std::uint32_t m_last_trade_id;
+    std::uint32_t m_transact_time;
+    double m_price;
+    double m_quantity;
+    BuySell m_buy_sell;
 
-	struct Base {
-		std::string type_;
-		bool is_used_;
-		Base(std::string type): type_(type), is_used_(false) {}
-	};
+    TradeMessage(const std::string& symbol, const std::string& s)
+    : m_symbol{ symbol }
+    {
+        int token_cnt = 0;
+        std::stringstream ss(s);
+        std::string token;
 
-	struct Book: public Base {
-		long time_;
-		std::string symbol_;
-		std::vector<std::pair<double, double>> bids_;
-		std::vector<std::pair<double, double>> asks_;
-		
-		Book(): Base("book") {}
-		
-		Book(const Book& book)
-		: Base("book"), time_(book.time_), symbol_(book.symbol_)
-		{
-			bids_ = book.bids_;
-			asks_ = book.asks_;
-		}
+        while (std::getline(ss, token, ','))
+        {
+            switch (token_cnt++) {
+                case 0:
+                    m_agg_trade_id = std::stoul(token);
+                    break;
+                case 1:
+                    m_price = std::stod(token);
+                    break;
+                case 2:
+                    m_quantity = std::stod(token);
+                    break;
+                case 3:
+                    m_first_trade_id = std::stoul(token);
+                    break;
+                case 4:
+                    m_last_trade_id = std::stoul(token);
+                    break;
+                case 5:
+                    m_transact_time = std::stoul(token);
+                    break;
+                case 6:
+                    m_buy_sell = token == "false" ? BuySell::BUY : BuySell::SELL;
+                default:
+                    break;
+            }
+        }
+    }
+};
 
-		Book(Book&& book)
-		: Base("book"), time_(book.time_), symbol_(book.symbol_), bids_(std::move(book.bids_)), asks_(std::move(book.asks_))
-		{
-			book.bids_.clear();
-			book.asks_.clear();
-			book.is_used_ = true;
-		}
+struct CompareTrade {
+    bool operator() (const TradeMessage& t1, const TradeMessage& t2)
+    {
+        return t1.m_transact_time > t2.m_transact_time;
+    }
+};
 
-		Book& operator=(const Book& book) {
-			type_ = "book";
-			time_ = book.time_;
-			symbol_ = book.symbol_;
-			bids_ = book.bids_;
-			asks_ = book.asks_;
-			return *this;
-		}
-
-		Book& operator=(Book&& book) {
-			type_ = "book";
-			time_ = book.time_;
-			symbol_ = book.symbol_;
-			bids_ = std::move(book.bids_);
-			asks_ = std::move(book.asks_);
-			book.is_used_ = true;
-			return *this;
-		}
-
-		~Book() {}
-
-		void Parse(std::string& line) {
-			auto tokens = split(line, ',');
-			time_ = std::stol(tokens[0]);
-			symbol_ = tokens[1];
-
-			for (int i = 1; i < 11; i++) {
-				bids_.push_back(std::make_pair(std::stod(tokens[2*i]), std::stod(tokens[2*i+1])));
-				asks_.push_back(std::make_pair(std::stod(tokens[2*i + 20]), std::stod(tokens[2*i + 21]))); 
-			}
-		}
-
-		void Clear() {
-			bids_.clear();
-			asks_.clear();
-			is_used_ = true;
-		}
-	};
-
-	struct Trade: public Base {
-		long time_;
-		std::string symbol_;
-		double price_;
-		double quantity_;
-		bool is_sell_;
-
-		Trade(): Base("trade") {}
-
-		Trade(Trade& trade): Base("trade") {
-			time_ = trade.time_;
-			symbol_ = trade.symbol_;
-			price_ = trade.price_;
-			quantity_ = trade.quantity_;
-			is_sell_ = trade.is_sell_;
-			trade.is_used_ = true;
-		}
-
-		Trade& operator=(Trade& trade) {
-			type_ = "trade";
-			time_ = trade.time_;
-			symbol_ = trade.symbol_;
-			price_ = trade.price_;
-			quantity_ = trade.quantity_;
-			is_sell_ = trade.is_sell_;
-			trade.is_used_ = true;
-			return *this;
-		}
-
-		void Parse(std::string& line) {
-			auto tokens = split(line, ',');
-			time_ = std::stol(tokens[0]);
-			symbol_ = tokens[1];
-			price_ = std::stod(tokens[2]);
-			quantity_ = std::stod(tokens[3]);
-			is_sell_ = tokens[4] == "true";
-		}
-
-		void Clear() {
-			is_used_ = true;
-		}
-	};
-}
-
-#endif
+} // namespace replayer
