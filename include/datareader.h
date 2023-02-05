@@ -36,7 +36,8 @@ public:
         m_trade_streams(symbols.size()),
         m_trade_cb(std::move(on_trade))
     {
-        for (int i = 0; i < symbols.size(); i++) {
+        for (int i = 0; i < symbols.size(); i++)
+        {
             std::string header;
             
             m_trade_streams[i] = std::make_unique<std::ifstream>(GetCsvName(symbols[i], date));

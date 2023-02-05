@@ -19,12 +19,14 @@ struct Crypto
     : m_symbol{ symbol }
     {}
 
-    void OnTrade(const TradeMessage& message) {
+    void OnTrade(const TradeMessage& message)
+    {
         std::cout << message << std::endl;
     }
 };
 
-void OnTrade(const TradeMessage& message) {
+void OnTrade(const TradeMessage& message)
+{
     crypto_map[message.m_symbol]->OnTrade(message);
 }
 
