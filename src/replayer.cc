@@ -1,13 +1,14 @@
 #include "datareader.h"
 
 #include <iostream>
+#include <stdexcept>
 #include <unordered_map>
 
 using namespace replayer;
 
 struct Crypto;
 
-std::vector<std::string> symbols { "BTCUSDT", "ETHUSDT"};
+std::vector<std::string> symbols { "BTCUSDT", "ETHUSDT", "LINKUSDT", "AAVEUSDT" };
 std::unordered_map<std::string, Crypto*> crypto_map;
 
 struct Crypto
@@ -19,7 +20,7 @@ struct Crypto
     {}
 
     void OnTrade(const TradeMessage& message) {
-        std::cout << message.m_symbol << std::endl;
+        std::cout << message << std::endl;
     }
 };
 
@@ -29,6 +30,9 @@ void OnTrade(const TradeMessage& message) {
 
 int main(int argc, char** argv) // input date format e.g) 2022-12-01
 {
+    if (argc != 2)
+        throw std::runtime_error("invalid date");
+
     std::string date{ argv[1] };
 
     for (const auto& symbol : symbols)

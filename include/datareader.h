@@ -27,26 +27,6 @@ class DataReader
 	TradeCBType m_trade_cb;
 
 public:
-    void Run()
-    {
-        do
-        {
-            for (int i = 0; i < m_symbols.size(); i++)
-            {
-                if (m_trade_streams[i]->eof())
-                    continue;
-                
-                std::string s;
-                std::getline(*m_trade_streams[i], s);
-                m_pq.emplace(m_symbols[i], s);
-            }
-
-            m_trade_cb(m_pq.top());
-            m_pq.pop();
-        }
-        while (!m_pq.empty());
-    }
-
 	DataReader(
         const std::vector<std::string>& symbols,
         const std::string& date,
@@ -68,6 +48,26 @@ public:
     {
         for (auto& trade_stream : m_trade_streams)
             trade_stream->close();
+    }
+
+    void Run()
+    {
+        do
+        {
+            for (int i = 0; i < m_symbols.size(); i++)
+            {
+                if (m_trade_streams[i]->eof())
+                    continue;
+                
+                std::string s;
+                std::getline(*m_trade_streams[i], s);
+                m_pq.emplace(m_symbols[i], s);
+            }
+
+            m_trade_cb(m_pq.top());
+            m_pq.pop();
+        }
+        while (!m_pq.empty());
     }
 };
 

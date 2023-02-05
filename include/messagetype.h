@@ -1,6 +1,8 @@
 #pragma once
 
+#include <iostream>
 #include <cstdint>
+#include <ostream>
 #include <string>
 #include <vector>
 #include <sstream>
@@ -57,6 +59,24 @@ struct TradeMessage
                     break;
             }
         }
+    }
+
+    friend std::ostream& operator<< (std::ostream& os, const TradeMessage& m)
+    {
+        const auto side = m.m_buy_sell == BuySell::BUY ? "buy" : "sell";
+        
+        os << "{\n"
+           << "\tsymbol: " << m.m_symbol << ",\n"
+           << "\ttransact_time: " << m.m_transact_time << ",\n"
+           << "\tagg_trade_id: " << m.m_agg_trade_id << ",\n"
+           << "\tfirst_trade_id: " << m.m_first_trade_id << ",\n"
+           << "\tlast_trade_id: " << m.m_last_trade_id << ",\n"
+           << "\tprice: " << m.m_price << ",\n"
+           << "\tquantity: " << m.m_quantity << ",\n"
+           << "\tside: " << side << '\n'
+           << "}";
+
+        return os;
     }
 };
 
