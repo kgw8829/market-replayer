@@ -21,28 +21,28 @@ std::string GetCsvName(
 template <typename TradeCBType>
 class DataReader
 {
-	std::priority_queue<TradeMessage, std::vector<TradeMessage>, CompareTrade> m_pq;
+    std::priority_queue<TradeMessage, std::vector<TradeMessage>, CompareTrade> m_pq;
     std::vector<std::string> m_symbols;
     std::vector<std::unique_ptr<std::ifstream>> m_trade_streams;
-	TradeCBType m_trade_cb;
+    TradeCBType m_trade_cb;
 
 public:
-	DataReader(
+    DataReader(
         const std::vector<std::string>& symbols,
         const std::string& date,
-		TradeCBType&& on_trade)
-	:
+        TradeCBType&& on_trade)
+    :
         m_symbols{ symbols },
         m_trade_streams(symbols.size()),
         m_trade_cb(std::move(on_trade))
-	{
+    {
         for (int i = 0; i < symbols.size(); i++) {
             std::string header;
             
             m_trade_streams[i] = std::make_unique<std::ifstream>(GetCsvName(symbols[i], date));
             std::getline(*m_trade_streams[i], header);
         }
-	}
+    }
 
     ~DataReader()
     {
